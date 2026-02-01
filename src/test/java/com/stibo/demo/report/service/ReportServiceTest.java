@@ -2,8 +2,6 @@ package com.stibo.demo.report.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stibo.demo.report.model.Datastandard;
-import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,26 +15,66 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.DisplayName;
+
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {ReportService.class, ObjectMapper.class})
 public class ReportServiceTest {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Autowired
-    ReportService reportService;
+    private ReportService reportService;
 
     private Datastandard datastandard;
 
     @BeforeEach
     public void before() throws IOException {
-        InputStream stream = getClass().getClassLoader().getResourceAsStream("datastandard.json");
-        this.datastandard = objectMapper.readValue(stream, Datastandard.class);
+        try (InputStream stream = getClass().getClassLoader().getResourceAsStream("datastandard.json")) {
+            this.datastandard = objectMapper.readValue(stream, Datastandard.class);
+        }
     }
 
     @Test
-    public void testReport() {
-        List<List<String>> report = reportService.report(datastandard, "leaf").map(row -> row.collect(toList())).collect(toList());
+    @DisplayName("Should generate the full report for the leaf category")
+    public void testLeafCategoryReport() {
+        List<List<String>> report = generateReport("leaf");
+
+        assertThat(report.get(0)).containsExactly("Category Name", "Attribute Name", "Description", "Type", "Group");
+
+        assertThat(report.get(1)).containsExactly(
+                "Root",
+                "String Value*",
+                null,
+                "string",
+                "All"
+        );
+
+        assertThat(report.get(2)).containsExactly(
+                "Leaf",
+                "Composite Value",
+                "Composite Value Description",
+                "Composite Value{  Nested Value*:integer}",
+                "All,Complex"
+        );
+    }
+
+    @Test
+    @DisplayName("Should only show root attributes when reporting from root")
+    public void testRootCategoryReport() {
+        List<List<String>> report = generateReport("root");
+
+        assertThat(report).hasSize(2); // Headers + 1 attribute
+        assertThat(report.get(1).get(0)).isEqualTo("Root");
+    }
+
+    private List<List<String>> generateReport(String categoryId) {
+        return reportService.report(datastandard, categoryId)
+                .map(rowStream -> rowStream.collect(toList()))
+                .collect(toList());
     }
 }
+
