@@ -1,7 +1,6 @@
 package com.stibo.demo.report.service;
 
 import com.stibo.demo.report.model.Attribute;
-import com.stibo.demo.report.model.AttributeLink;
 import com.stibo.demo.report.model.Category;
 import com.stibo.demo.report.model.Datastandard;
 import org.springframework.stereotype.Component;

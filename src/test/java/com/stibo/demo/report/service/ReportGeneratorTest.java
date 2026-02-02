@@ -4,7 +4,6 @@ import com.stibo.demo.report.model.Attribute;
 import com.stibo.demo.report.model.AttributeLink;
 import com.stibo.demo.report.model.Category;
 import com.stibo.demo.report.model.Datastandard;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
