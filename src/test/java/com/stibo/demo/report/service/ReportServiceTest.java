@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import static com.stibo.demo.report.service.AttributeFormatterConstants.*;
 import static java.util.stream.Collectors.toList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {ReportService.class, ObjectMapper.class})
+@ContextConfiguration(classes = {
+        ReportService.class,
+        ObjectMapper.class,
+        ReportGenerator.class,
+        DataStandardLookupService.class,
+        AttributeFormatter.class})
 public class ReportServiceTest {
 
     @Autowired
@@ -36,6 +42,7 @@ public class ReportServiceTest {
         try (InputStream stream = getClass().getClassLoader().getResourceAsStream("datastandard.json")) {
             this.datastandard = objectMapper.readValue(stream, Datastandard.class);
         }
+
     }
 
     @Test
@@ -48,7 +55,7 @@ public class ReportServiceTest {
         assertThat(report.get(1)).containsExactly(
                 "Root",
                 "String Value*",
-                null,
+                "",
                 "string",
                 "All"
         );
@@ -57,8 +64,8 @@ public class ReportServiceTest {
                 "Leaf",
                 "Composite Value",
                 "Composite Value Description",
-                "Composite Value{  Nested Value*:integer}",
-                "All,Complex"
+                "Composite Value" + COMPOSITE_TYPE_OPENING_BRACE + LINE_SEPARATOR + "  Nested Value*:integer" + LINE_SEPARATOR + COMPOSITE_TYPE_CLOSING_BRACE + "[]",
+                "All" + LINE_SEPARATOR + "Complex"
         );
     }
 
