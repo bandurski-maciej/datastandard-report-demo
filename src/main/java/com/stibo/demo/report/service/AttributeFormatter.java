@@ -59,7 +59,7 @@ public class AttributeFormatter {
      * @return a formatted string representing the attribute type and its structure
      */
     public String formatAttributeTypeDescription(Map<String, Attribute> attributeLookup, Attribute attribute) {
-        if (!isCompositeType(attribute.type())) {
+        if (!isCompositeType(attribute)) {
             return formatBaseType(attribute.type());
         }
         return describeTypeRecursively(attributeLookup, attribute, new StringBuilder(), 0).toString();
@@ -82,12 +82,9 @@ public class AttributeFormatter {
                                                   StringBuilder typeBuilder,
                                                   int recursionLevel) {
 
-        if (!isCompositeType(attribute.type())) return typeBuilder;
+        if (!isCompositeType(attribute)) return typeBuilder;
 
-        typeBuilder.append(COMPOSITE_TYPE_INDENTATION.repeat(recursionLevel))
-                .append(attribute.name())
-                .append(COMPOSITE_TYPE_OPENING_BRACE)
-                .append(LINE_SEPARATOR);
+        buildParentTypeName(recursionLevel, attribute, typeBuilder);
 
         List<AttributeLink> links = attribute.attributeLinks();
         recursionLevel++;
@@ -96,13 +93,10 @@ public class AttributeFormatter {
 
             if (child == null) continue;
 
-            if (isCompositeType(child.type())) {
+            if (isCompositeType(child)) {
                 describeTypeRecursively(attributeLookup, child, typeBuilder, recursionLevel);
             } else {
-                typeBuilder.append(COMPOSITE_TYPE_INDENTATION.repeat(recursionLevel))
-                        .append(formatAttributeName(link, child))
-                        .append(TYPE_MAPPING_SEPARATOR)
-                        .append(formatBaseType(child.type()));
+                buildChildTypeName(typeBuilder, recursionLevel, link, child);
             }
             typeBuilder.append(LINE_SEPARATOR);
         }
@@ -112,6 +106,32 @@ public class AttributeFormatter {
                 .append(COMPOSITE_TYPE_CLOSING_BRACE);
         appendMultivalueMarker(attribute.type(), typeBuilder);
         return typeBuilder;
+    }
+
+    /**
+     * Checks if a given attribute type is a composite type.
+     *
+     * @param type the type to check
+     * @return {@code true} if the type ID matches the composite identifier
+     */
+    private boolean isCompositeType(Attribute type) {
+        return !type.attributeLinks().isEmpty();
+    }
+
+    private void buildParentTypeName(int recursionLevel, Attribute attribute, StringBuilder typeBuilder) {
+        String indentation = COMPOSITE_TYPE_INDENTATION.repeat(recursionLevel);
+        String identifier = (recursionLevel == 0)
+                ? attribute.type().id()
+                : "%s: %s".formatted(attribute.name(), attribute.type().id());
+
+        typeBuilder.append("%s%s%s%n".formatted(indentation, identifier, COMPOSITE_TYPE_OPENING_BRACE));
+    }
+
+    private void buildChildTypeName(StringBuilder typeBuilder, int recursionLevel, AttributeLink link, Attribute child) {
+        typeBuilder.append(COMPOSITE_TYPE_INDENTATION.repeat(recursionLevel))
+                .append(formatAttributeName(link, child))
+                .append(TYPE_MAPPING_SEPARATOR)
+                .append(formatBaseType(child.type()));
     }
 
     /**
@@ -136,16 +156,6 @@ public class AttributeFormatter {
         StringBuilder sb = new StringBuilder(type.id());
         appendMultivalueMarker(type, sb);
         return sb.toString();
-    }
-
-    /**
-     * Checks if a given attribute type is a composite type.
-     *
-     * @param type the type to check
-     * @return {@code true} if the type ID matches the composite identifier
-     */
-    private boolean isCompositeType(AttributeType type) {
-        return COMPOSITE_TYPE_ID.equals(type.id());
     }
 
 }
